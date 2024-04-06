@@ -1,33 +1,47 @@
-import React from "react";
+import React, { useState } from "react";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
-import { View, Image } from "react-native";
+import { View, useWindowDimensions } from "react-native";
+import {
+  cancelAnimation,
+  useSharedValue,
+  withDecay,
+  clamp,
+  withClamp,
+} from "react-native-reanimated";
+import { Card } from "./Card";
 import { cards } from "../../utils/utils";
 
 export const CardsList = () => {
+  const [listHeight, setListHeight] = useState(0);
+  const { height: screenHeight } = useWindowDimensions();
+  const scrollY = useSharedValue(0);
+
+  const maxScrollY = listHeight - screenHeight + 70;
+
   const pan = Gesture.Pan()
+    .onBegin(() => {
+      cancelAnimation(scrollY);
+    })
     .onStart(() => {
       console.log("Panning started");
     })
     .onChange((e) => {
-      console.log("Panning. Scrolled on Y: ", e.changeY);
+      scrollY.value = clamp(scrollY.value - e.changeY, 0, listHeight);
     })
-    .onEnd(() => {
-      console.log("Panning ended!");
+    .onEnd((e) => {
+      scrollY.value = withClamp(
+        { min: 0, max: maxScrollY },
+        withDecay({ velocity: -e.velocityY })
+      );
     });
   return (
     <GestureDetector gesture={pan}>
-      <View style={{ padding: 10, paddingTop: 20 }}>
+      <View
+        style={{ padding: 10, marginTop: 20 }}
+        onLayout={(e) => setListHeight(e.nativeEvent.layout.height)}
+      >
         {cards.map((card, index) => (
-          <Image
-            key={index}
-            style={{
-              width: "100%",
-              marginVertical: 5,
-              height: undefined,
-              aspectRatio: 7 / 4,
-            }}
-            source={card}
-          />
+          <Card key={index} card={card} scrollY={scrollY} />
         ))}
       </View>
     </GestureDetector>
