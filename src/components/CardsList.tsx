@@ -14,6 +14,8 @@ import { cards } from "../../utils/utils";
 export const CardsList = () => {
   const [listHeight, setListHeight] = useState(0);
   const { height: screenHeight } = useWindowDimensions();
+
+  const activeCardIndex = useSharedValue(null);
   const scrollY = useSharedValue(0);
 
   const maxScrollY = listHeight - screenHeight + 70;
@@ -22,11 +24,9 @@ export const CardsList = () => {
     .onBegin(() => {
       cancelAnimation(scrollY);
     })
-    .onStart(() => {
-      console.log("Panning started");
-    })
+    .onStart(() => {})
     .onChange((e) => {
-      scrollY.value = clamp(scrollY.value - e.changeY, 0, listHeight);
+      scrollY.value = clamp(scrollY.value - e.changeY, 0, maxScrollY);
     })
     .onEnd((e) => {
       scrollY.value = withClamp(
@@ -41,7 +41,13 @@ export const CardsList = () => {
         onLayout={(e) => setListHeight(e.nativeEvent.layout.height)}
       >
         {cards.map((card, index) => (
-          <Card key={index} card={card} scrollY={scrollY} />
+          <Card
+            activeCardIndex={activeCardIndex}
+            index={index}
+            key={index}
+            card={card}
+            scrollY={scrollY}
+          />
         ))}
       </View>
     </GestureDetector>
